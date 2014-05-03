@@ -16,7 +16,7 @@ def get_soup(archive_url):
 	soup = Soup(page,"lxml")
 	return soup
 
-def get_links(soup):
+def get_links_from(soup):
 	links = list()
 	temp = soup.find_all('a')[2:-9]
 	for link in temp:
@@ -75,11 +75,19 @@ def download_comics(comic_num,comic_link):
 	else:
 		print "\t" + comic_file_name + "\t-SKIPPED because FILE ALREADY EXISTS"
 
-def get_comic(option):
-	if option == "all":
+def get_links():
+
+	print "\tPyGoose v2.0 - AbstruseGoose comic downloader"
+	print "\n1.Download all comics"
+	print "2.Download latest comic"
+	print "3.Download a range of comics - for example 150-200"
+	user_choice = input('Enter your choice : ')
+	user_choice = str(user_choice)
+	if user_choice == "1":
 		db = sqlite3.connect("links.sqlite")
 		cursor = db.cursor()
-		cursor.execute('SELECT comic_num,link from goose')
+		cursor.execute('SELECT comic_num,link FROM goose')
+		links= list()
 		links = cursor.fetchall()
 		dirr = os.getcwd()
 		if not os.path.exists("Comics"):
@@ -91,49 +99,47 @@ def get_comic(option):
 			download_comics(comic_num,comic_link)
 			time.sleep(5)
 		db.close()
-	elif option == "latest":
+	elif user_choice == "2":
 		db = sqlite3.connect("links.sqlite")
 		cursor = db.cursor()
-		cursor.execute('SELECT comic_num,link from goose WHERE comic_num=MAX(comic_num)')
+		cursor.execute('SELECT MAX(comic_num),link FROM goose')
 		link = cursor.fetchone()
 		dirr = os.getcwd()
 		if not os.path.exists("Comics"):
 			os.mkdir("Comics")
 		os.chdir(dirr+'/Comics')
-		comic_link = link[1]
 		comic_num = link[0]
+		comic_link = link[1]
 		download_comics(comic_num,comic_link)
 		time.sleep(5)
 		db.close()
-	elif option == "range":
+	elif user_choice=="3":
+		sys.exit("\nBYE.")
 		db = sqlite3.connect("links.sqlite")
 		cursor = db.cursor()
-		
+		min_range = input('Enter min_range : ')
+		max_range = input('Enter max_range : ')
+		min_range = int(min_range)
+		max_range = int(max_range)
+		links = list()
+		for i in range(min_range,max_range+1):
+			cursor.execute('SELECT * FROM goose WHERE comic_num = ? ',(i,))
+			link = cursor.fetchone()
+			comic_num = link[0]
+			comic_link = link[1]
+			download_comics(comic_num,comic_link)
+			time.sleep(5)
+		db.close()
 def first_run():
 	os.mkdir("Comics")
 	soup = get_soup(archive_url)
-	get_links(soup)
+	get_links_from(soup)
 
-def user_choice():
-	print "\n\t\t\t\tWelcome to GoosePy v2.0a - AbstruseGoose comics downloader"
-	print "\n"
-	print "\t\t1.Download all comics"
-	print "\t\t2.Download latest comic"
-	print "\t\t3.Download a range of comics : 150-200"
-	print "\t\t4.Exit"
-	user_choice = input("\n\t\t\t\tEnter your choice : ")
-	if user_choice == "1":
-		get_comic("all")
-	elif user_choice == "2":
-		get_comic("latest")
-	elif user_choice == "3":
-		sys.exit("\nINVALID CHOICE!! EXITING!!")
 
 def main():
 	if not os.path.exists("links.sqlite"):
 		first_run()
-	user_choice()
-	#get_links()
+	get_links()
 
 
 if __name__ == '__main__':
