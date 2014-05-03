@@ -75,32 +75,65 @@ def download_comics(comic_num,comic_link):
 	else:
 		print "\t" + comic_file_name + "\t-SKIPPED because FILE ALREADY EXISTS"
 
-def get_links():
-	db = sqlite3.connect("links.sqlite")
-	cursor = db.cursor()
-	cursor.execute('SELECT comic_num,link from goose')
-	links = cursor.fetchall()
-	dirr = os.getcwd()
-	if not os.path.exists("Comics"):
-		os.mkdir("Comics")
-	os.chdir(dirr+'/Comics')
-	for link in links:
+def get_comic(option):
+	if option == "all":
+		db = sqlite3.connect("links.sqlite")
+		cursor = db.cursor()
+		cursor.execute('SELECT comic_num,link from goose')
+		links = cursor.fetchall()
+		dirr = os.getcwd()
+		if not os.path.exists("Comics"):
+			os.mkdir("Comics")
+		os.chdir(dirr+'/Comics')
+		for link in links:
+			comic_link = link[1]
+			comic_num = link[0]
+			download_comics(comic_num,comic_link)
+			time.sleep(5)
+		db.close()
+	elif option == "latest":
+		db = sqlite3.connect("links.sqlite")
+		cursor = db.cursor()
+		cursor.execute('SELECT comic_num,link from goose WHERE comic_num=MAX(comic_num)')
+		link = cursor.fetchone()
+		dirr = os.getcwd()
+		if not os.path.exists("Comics"):
+			os.mkdir("Comics")
+		os.chdir(dirr+'/Comics')
 		comic_link = link[1]
 		comic_num = link[0]
 		download_comics(comic_num,comic_link)
 		time.sleep(5)
-	db.close()
-
+		db.close()
+	elif option == "range":
+		db = sqlite3.connect("links.sqlite")
+		cursor = db.cursor()
+		
 def first_run():
 	os.mkdir("Comics")
 	soup = get_soup(archive_url)
 	get_links(soup)
 
+def user_choice():
+	print "\n\t\t\t\tWelcome to GoosePy v2.0a - AbstruseGoose comics downloader"
+	print "\n"
+	print "\t\t1.Download all comics"
+	print "\t\t2.Download latest comic"
+	print "\t\t3.Download a range of comics : 150-200"
+	print "\t\t4.Exit"
+	user_choice = input("\n\t\t\t\tEnter your choice : ")
+	if user_choice == "1":
+		get_comic("all")
+	elif user_choice == "2":
+		get_comic("latest")
+	elif user_choice == "3":
+		sys.exit("\nINVALID CHOICE!! EXITING!!")
 
 def main():
 	if not os.path.exists("links.sqlite"):
 		first_run()
-	get_links()
+	user_choice()
+	#get_links()
 
 
 if __name__ == '__main__':
